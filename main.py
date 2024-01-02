@@ -16,8 +16,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--paddle1', type=str, default='input', help='Paddle 1 movement system (input, crisp, fuzzy)')
     parser.add_argument('--paddle2', type=str, default='fuzzy', help='Paddle 2 movement system (input, crisp, fuzzy)')
-    parser.add_argument('--view', type=bool, default=False, help='View fuzzy system (true, false)')
-    parser.add_argument('--log', type=bool, default=False, help='Log game data (true, false)')
     parser.add_argument('--width', type=int, default=1024, help='Window width (px)')
     parser.add_argument('--height', type=int, default=768, help='Window height (px)')
     parser.add_argument('--speed', type=float, default=1000.0, help='Paddle speed (px/s)')
@@ -27,21 +25,28 @@ def main():
     parser.add_argument('--paddle_size', type=int, default=100, help='Paddle size (px)')
     parser.add_argument('--score', type=int, default=-1, help='Score to win (points)')
     parser.add_argument('--games', type=int, default=1, help='Number of games to play')
-    parser.add_argument('--nogui', type=bool, default=False, help='Disable GUI (true, false)')
+    parser.add_argument('--log', type=str, default=None, help='Name of log file (no logging by default)')
+    parser.add_argument('--nogui', action='store_true', help='Disable GUI and log events to console')
+    parser.add_argument('--view', action='store_true', help='View fuzzy system')
+
     args = parser.parse_args()
 
     log_file = None
 
-    if args.log:
+    if args.log is not None:
         if not os.path.exists('logs'):
             os.makedirs('logs')
-        log_file = open('logs/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.txt', 'w')
+        log_file = open('logs/' + args.log + '-' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.txt', 'w')
 
     def log(message: str):
         if args.log:
             log_file.write(message + '\n')
         if args.nogui:
             print(message)
+
+    if args.nogui and (args.paddle1 == 'input' or args.paddle2 == 'input'):
+        log('Input system cannot be used without GUI, use a different system with --paddle1 and --paddle2')
+        return
 
     log('Paddle 1 system: ' + args.paddle1)
     log('Paddle 2 system: ' + args.paddle2)
