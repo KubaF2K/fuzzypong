@@ -59,6 +59,8 @@ def main():
     log('Max angle variation: ' + str(args.max_angle_variation))
     log('Paddle size: ' + str(args.paddle_size))
     log('Score to win: ' + str(args.score))
+    if args.ball_reset is not None:
+        log('Ball reset time: ' + str(args.ball_reset))
 
     games_won = [0, 0]
 
@@ -114,6 +116,7 @@ def main():
             delta = delta_ms / 1000
             time_since_ball_spawn += delta_ms
             if args.ball_reset is not None and time_since_ball_spawn >= args.ball_reset * 1000:
+                log('Ball reset after ' + str(time_since_ball_spawn/1000) + ' seconds')
                 reset_ball()
                 time_since_ball_spawn = 0
             speed = 0
