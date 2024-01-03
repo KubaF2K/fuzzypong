@@ -25,11 +25,14 @@ def main():
     parser.add_argument('--paddle_size', type=int, default=100, help='Paddle size (px)')
     parser.add_argument('--score', type=int, default=-1, help='Score to win (points)')
     parser.add_argument('--games', type=int, default=1, help='Number of games to play')
+    parser.add_argument('--ball-reset', type=int, default=None, help='Ball reset time (s)')
     parser.add_argument('--log', type=str, default=None, help='Name of log file (no logging by default)')
     parser.add_argument('--nogui', action='store_true', help='Disable GUI and log events to console')
     parser.add_argument('--view', action='store_true', help='View fuzzy system')
 
     args = parser.parse_args()
+
+    start_time = datetime.now()
 
     log_file = None
 
@@ -67,6 +70,15 @@ def main():
         paddle2 = Paddle(args.width - 20, args.height // 2 - 50, args.paddle_size, args.speed, args.max_speed)
         ball = Ball(args.width // 2, args.height // 2, 5, args.ball_speed/2)
 
+        clock = pg.time.Clock()
+        time_since_ball_spawn = 0
+
+        def reset_ball():
+            ball.x = args.width / 2.0
+            ball.y = args.height / 2.0
+            ball.speed = args.ball_speed / 2
+            ball.angle = random.randint(0, 360)
+
         fuzzy_system = FuzzySystem(args.height, args.paddle_size, args.max_speed, args.ball_speed, args.view)
 
         paddle1_system = args.paddle1
@@ -96,12 +108,14 @@ def main():
         right_pressed = False
         shift_pressed = False
 
-        clock = pg.time.Clock()
-
         running = True
         while running:
-            delta = clock.tick() / 1000
-
+            delta_ms = clock.tick()
+            delta = delta_ms / 1000
+            time_since_ball_spawn += delta_ms
+            if args.ball_reset is not None and time_since_ball_spawn >= args.ball_reset * 1000:
+                reset_ball()
+                time_since_ball_spawn = 0
             speed = 0
             if not args.nogui:
                 for event in pygame.event.get():
@@ -173,18 +187,14 @@ def main():
                 score[1] += 1
                 if args.log:
                     log('Paddle 2 scored: ' + str(score))
-                ball.x = args.width / 2.0
-                ball.y = args.height / 2.0
-                ball.speed = args.ball_speed / 2
-                ball.angle = random.randint(0, 360)
+                reset_ball()
+                time_since_ball_spawn = 0
             if ball.x >= args.width:
                 score[0] += 1
                 if args.log:
                     log('Paddle 1 scored: ' + str(score))
-                ball.x = args.width / 2.0
-                ball.y = args.height / 2.0
-                ball.speed = args.ball_speed / 2
-                ball.angle = random.randint(0, 360)
+                reset_ball()
+                time_since_ball_spawn = 0
             if paddle1.x <= ball.x <= paddle1.x + 10 and paddle1.y <= ball.y <= paddle1.y + paddle1.width:
                 angle_variation = (ball.y - paddle1.y) / (paddle1.width / 2) - 1
                 ball.angle = 180.0 - ball.angle + angle_variation * args.max_angle_variation
@@ -232,7 +242,7 @@ def main():
                 paddle_input_text_rect = paddle_input_text.get_rect()
                 paddle_input_text_rect.center = (args.width / 2, 192)
                 paddle2_input_text = font.render('Paddle 2 velocity: ' + '{:.2f}'.format(paddle2.velocity), True,
-                                                (255, 255, 255))
+                                                 (255, 255, 255))
                 paddle2_input_text_rect = paddle2_input_text.get_rect()
                 paddle2_input_text_rect.center = (args.width / 2, 224)
                 screen.blit(score_text, score_text_rect)
@@ -246,6 +256,8 @@ def main():
                 pg.display.flip()
 
     log('Games won: ' + str(games_won))
+    log('Time elapsed: ' + str(datetime.now() - start_time))
+
 
 if __name__ == "__main__":
     main()
